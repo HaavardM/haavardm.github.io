@@ -1,16 +1,16 @@
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
+  <div class="container-fluid" id="app">
+    <div class="container-fluid" id="nav">
+      <router-link to="/">Gaussian Process</router-link>
     </div>
-    <router-view />
+    <router-view class="container-fluid" />
   </div>
 </template>
 
 <style lang="scss">
+@import url("https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@500&display=swap");
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Abhaya Libre", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
