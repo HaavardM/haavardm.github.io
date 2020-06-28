@@ -8,9 +8,10 @@
 </template>
 
 <style lang="scss">
-@import url("https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cardo&display=swap");
 #app {
-  font-family: "Abhaya Libre", Helvetica, Arial, sans-serif;
+  font-family: "Cardo", Helvetica, Arial, sans-serif;
+  font-size: 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
