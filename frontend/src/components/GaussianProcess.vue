@@ -36,7 +36,8 @@
                 v-for="project in projects"
                 :key="project.name"
                 :value="project"
-              >{{ project.displayName }}</option>
+                >{{ project.displayName }}</option
+              >
             </select>
             <label for="deviceSelect">Device</label>
             <select
@@ -49,7 +50,8 @@
                 :key="device.name"
                 v-for="device in devices"
                 :value="device"
-              >{{ device.labels.name }}</option>
+                >{{ device.labels.name }}</option
+              >
             </select>
           </div>
         </form>
@@ -108,7 +110,7 @@ import {
   Project,
   Device,
   listDevices,
-  fetchEvents
+  fetchEvents,
 } from "@/modules/DTAPI";
 const rust = import("../../../dtgaussprocess/pkg/dtgaussprocess");
 
@@ -138,25 +140,23 @@ export default class GaussianProcess extends Vue {
   selectedProject: Project | null = null;
   selectedDevice: Device | null = null;
 
-  sampleX: number[] = [];
   x: number[] = dummyX;
   y: number[] = dummyY;
   noiseY = Math.round(Math.pow(0.4 / 3, 2) * 100000) / 100000;
 
   chart: Chart | undefined;
 
-  setSampleX() {
+  get sampleX(): number[] {
     const N = Math.ceil(this.x[this.x.length - 1] - this.x[0]);
-    this.sampleX = [...Array(N).keys()]
-      .map(i => -1 * i)
-      .reverse()
-      .flatMap(x => [...Array(10).keys()].reverse().map(i => x - i / 10));
+    return [
+      ...[...Array(N).keys()].map((i) => -1 * i).reverse(),
+      ...[...Array(Math.ceil(this.lengthScale)).keys()].map((i) => i + 1),
+    ].flatMap((x) => [...Array(10).keys()].reverse().map((i) => x - i / 10));
   }
 
   mounted() {
     this.username = sessionStorage.getItem("username") || "";
     this.password = sessionStorage.getItem("password") || "";
-    this.setSampleX();
     this.onUserInfo();
     this.doGP();
     const ctx = this.canvas.getContext("2d");
@@ -171,29 +171,29 @@ export default class GaussianProcess extends Vue {
                 ticks: {
                   suggestedMax: 0,
                   suggestedMin: -20,
-                  autoSkip: false
-                }
-              }
-            ]
+                  autoSkip: false,
+                },
+              },
+            ],
           },
           legend: {
-            display: false
+            display: false,
           },
           maintainAspectRatio: false,
           plugins: {
             zoom: {
               pan: {
                 enabled: true,
-                mode: "x"
+                mode: "x",
               },
               zoom: {
                 enabled: true,
-                mode: "x"
-              }
-            }
+                mode: "x",
+              },
+            },
           },
-          onClick: this.onClick
-        }
+          onClick: this.onClick,
+        },
       });
     }
   }
@@ -215,7 +215,7 @@ export default class GaussianProcess extends Vue {
   onUserInfo() {
     if (this.username && this.password) {
       listProjects(this.username, this.password)
-        .then(p => {
+        .then((p) => {
           this.projects = p;
           if (this.projects.length > 0) {
             this.selectedProject = this.projects[0];
@@ -232,8 +232,8 @@ export default class GaussianProcess extends Vue {
   onProjectSelection() {
     if (this.selectedProject) {
       listDevices(this.username, this.password, this.selectedProject.name, [
-        "temperature"
-      ]).then(d => {
+        "temperature",
+      ]).then((d) => {
         this.devices = d;
         if (this.devices.length > 0) {
           this.selectedDevice = this.devices[0];
@@ -246,34 +246,33 @@ export default class GaussianProcess extends Vue {
   onDeviceSelection() {
     if (this.selectedDevice) {
       fetchEvents(this.username, this.password, this.selectedDevice.name, [
-        "temperature"
+        "temperature",
       ])
-        .then(events =>
+        .then((events) =>
           events.length
             ? events
             : Promise.reject(
                 `No events found for ${this.selectedDevice?.name} `
               )
         )
-        .then(events =>
-          events.map(e => {
+        .then((events) =>
+          events.map((e) => {
             if (!e.data.temperature) {
               return null;
             }
             return {
               timestamp:
                 new Date(e.data.temperature.updateTime).getTime() / 1000,
-              value: e.data.temperature.value
+              value: e.data.temperature.value,
             };
           })
         )
-        .then(events => {
-          const filtered = events.filter(e => e) as DataPoint[];
-          this.y = filtered.map(e => e.value);
+        .then((events) => {
+          const filtered = events.filter((e) => e) as DataPoint[];
+          this.y = filtered.map((e) => e.value);
           const N = this.y.length;
           const idx = [...Array(N).keys()];
-          this.x = idx.map(i => -1 * i).reverse();
-          this.setSampleX();
+          this.x = idx.map((i) => -1 * i).reverse();
           this.doGP();
         })
         .catch(console.error);
@@ -281,7 +280,7 @@ export default class GaussianProcess extends Vue {
   }
 
   doGP() {
-    rust.then(rust => {
+    rust.then((rust) => {
       const gp = rust.GaussianProcess.new(
         Float64Array.from(this.x),
         Float64Array.from(this.y)
@@ -292,8 +291,9 @@ export default class GaussianProcess extends Vue {
         this.amplitude,
         this.noiseY
       );
+      const time: number[] = this.sampleX.map((x) => (x * 15) / 60);
       const createPoint = (y: number, i: number) => {
-        return { y, x: (this.sampleX[i] * 15) / 60 };
+        return { y, x: time[i] };
       };
       const mean: Point[] = Array.from(post.mean()).map(createPoint);
       const ciLow: Point[] = Array.from(post.ci_low()).map(createPoint);
@@ -317,51 +317,51 @@ export default class GaussianProcess extends Vue {
               pointBorderWidth: 2,
               showLine: false,
               pointRadius: 5,
-              fill: false
+              fill: false,
             },
             {
               data: mean,
               label: "Posterior Mean",
               fill: false,
               borderColor: "#F0522C",
-              pointRadius: 0
+              pointRadius: 0,
             },
             {
               data: ciLow,
               fill: false,
               borderColor: "rgba(0, 0, 255, 0.5)",
-              pointRadius: 0
+              pointRadius: 0,
             },
             {
               data: ciHigh,
               fill: "-1",
               borderColor: "rgba(0, 0, 255, 0.5)",
               backgroundColor: "rgba(0, 0, 255, 0.1)",
-              pointRadius: 0
-            }
+              pointRadius: 0,
+            },
           ];
-          if (this.chart.options.plugins?.zoom?.pan) {
-            this.chart.options.plugins.zoom.pan = {
-              ...this.chart.options.plugins.zoom.pan,
-              rangeMin: {
-                x: mean[0].x
-              },
-              rangeMax: {
-                x: mean[mean.length - 1].x
-              }
-            };
-          }
-          if (this.chart.options.plugins?.zoom?.pan) {
-            this.chart.options.plugins.zoom.zoom = {
-              ...this.chart.options.plugins.zoom.zoom,
-              rangeMin: {
-                x: mean[0].x
-              },
-              rangeMax: {
-                x: mean[mean.length - 1].x
-              }
-            };
-          }
+        }
+        if (this.chart.options.plugins?.zoom?.pan) {
+          this.chart.options.plugins.zoom.pan = {
+            ...this.chart.options.plugins.zoom.pan,
+            rangeMin: {
+              x: time[0],
+            },
+            rangeMax: {
+              x: time[time.length - 1],
+            },
+          };
+        }
+        if (this.chart.options.plugins?.zoom?.pan) {
+          this.chart.options.plugins.zoom.zoom = {
+            ...this.chart.options.plugins.zoom.zoom,
+            rangeMin: {
+              x: time[0],
+            },
+            rangeMax: {
+              x: time[time.length - 1],
+            },
+          };
         }
         this.chart.update();
       }
