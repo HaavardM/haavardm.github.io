@@ -1,63 +1,63 @@
 <template>
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-3 card">
-        <form v-if="projects">
-          <div class="form-group">
-            <label for="usernameInput">Username</label>
-            <input
-              class="form-control"
-              id="usernameInput"
-              @change="onUserInfo()"
-              type="text"
-              v-model="username"
-              placeholder="Enter Username"
-            />
-            <label for="passwordInput">Password</label>
-            <input
-              id="passwordInput"
-              class="form-control"
-              @change="onUserInfo()"
-              type="password"
-              v-model="password"
-              placeholder="Enter Password"
-            />
-          </div>
-          <div class="form-group">
-            <label for="projectSelect">Project</label>
-            <select
-              class="form-control"
-              id="projectSelect"
-              v-model="selectedProject"
-              @change="onProjectSelection()"
-              placeholder="Select project"
-            >
-              <option
-                v-for="project in projects"
-                :key="project.name"
-                :value="project"
-                >{{ project.displayName }}</option
+  <div>
+    <div class="container card">
+      <b-modal id="userinputform" title="Disruptive Technologies API">
+        <div class="container">
+          <form v-if="projects">
+            <div class="form-group">
+              <label for="usernameInput">Username</label>
+              <input
+                class="form-control"
+                id="usernameInput"
+                @change="onUserInfo()"
+                type="text"
+                v-model="username"
+                placeholder="Enter Username"
+              />
+              <label for="passwordInput">Password</label>
+              <input
+                id="passwordInput"
+                class="form-control"
+                @change="onUserInfo()"
+                type="password"
+                v-model="password"
+                placeholder="Enter Password"
+              />
+            </div>
+            <div class="form-group">
+              <label for="projectSelect">Project</label>
+              <select
+                class="form-control"
+                id="projectSelect"
+                v-model="selectedProject"
+                @change="onProjectSelection()"
+                placeholder="Select project"
               >
-            </select>
-            <label for="deviceSelect">Device</label>
-            <select
-              id="deviceSelect"
-              v-model="selectedDevice"
-              @change="onDeviceSelection()"
-              class="form-control"
-            >
-              <option
-                :key="device.name"
-                v-for="device in devices"
-                :value="device"
-                >{{ device.labels.name }}</option
+                <option
+                  v-for="project in projects"
+                  :key="project.name"
+                  :value="project"
+                >{{ project.displayName }}</option>
+              </select>
+              <label for="deviceSelect">Device</label>
+              <select
+                id="deviceSelect"
+                v-model="selectedDevice"
+                @change="onDeviceSelection()"
+                class="form-control"
               >
-            </select>
-          </div>
-        </form>
-      </div>
-      <div class="col-md card mx-md-2">
-        <div class="row">
+                <option
+                  :key="device.name"
+                  v-for="device in devices"
+                  :value="device"
+                >{{ device.labels.name }}</option>
+              </select>
+            </div>
+          </form>
+        </div>
+      </b-modal>
+      <div class="mx-md-2">
+        <div class="row my-4">
           <div class="col">
             <label for="measurementNoise">Measurement Noise</label>
             <input
@@ -92,10 +92,13 @@
             />
           </div>
         </div>
-        <div style="position: relative; height:100%; width:100%">
+        <div class="my-4" style="position: relative; height:100%; width:100%">
           <canvas ref="canvas" id="cv"></canvas>
         </div>
       </div>
+    </div>
+    <div class="my-4 container card">
+      <b-button class="m-2" v-b-modal.userinputform>DT</b-button>
     </div>
   </div>
 </template>
@@ -110,7 +113,7 @@ import {
   Project,
   Device,
   listDevices,
-  fetchEvents,
+  fetchEvents
 } from "@/modules/DTAPI";
 const rust = import("../../../dtgaussprocess/pkg/dtgaussprocess");
 
@@ -142,16 +145,16 @@ export default class GaussianProcess extends Vue {
 
   x: number[] = dummyX;
   y: number[] = dummyY;
-  noiseY = Math.round(Math.pow(0.4 / 3, 2) * 100000) / 100000;
+  noiseY = Math.round(Math.pow(0.4 / 2, 2) * 100000) / 100000;
 
   chart: Chart | undefined;
 
   get sampleX(): number[] {
     const N = Math.ceil(this.x[this.x.length - 1] - this.x[0]);
     return [
-      ...[...Array(N).keys()].map((i) => -1 * i).reverse(),
-      ...[...Array(Math.ceil(this.lengthScale)).keys()].map((i) => i + 1),
-    ].flatMap((x) => [...Array(10).keys()].reverse().map((i) => x - i / 10));
+      ...[...Array(N).keys()].map(i => -1 * i).reverse(),
+      ...[...Array(Math.ceil(this.lengthScale)).keys()].map(i => i + 1)
+    ].flatMap(x => [...Array(10).keys()].reverse().map(i => x - i / 10));
   }
 
   mounted() {
@@ -164,6 +167,7 @@ export default class GaussianProcess extends Vue {
       this.chart = new Chart(ctx, {
         type: "line",
         options: {
+          aspectRatio: 40 / 38,
           scales: {
             xAxes: [
               {
@@ -171,29 +175,29 @@ export default class GaussianProcess extends Vue {
                 ticks: {
                   suggestedMax: 0,
                   suggestedMin: -20,
-                  autoSkip: false,
-                },
-              },
-            ],
+                  autoSkip: false
+                }
+              }
+            ]
           },
           legend: {
-            display: false,
+            display: false
           },
           maintainAspectRatio: false,
           plugins: {
             zoom: {
               pan: {
                 enabled: true,
-                mode: "x",
+                mode: "x"
               },
               zoom: {
                 enabled: true,
-                mode: "x",
-              },
-            },
+                mode: "x"
+              }
+            }
           },
-          onClick: this.onClick,
-        },
+          onClick: this.onClick
+        }
       });
     }
   }
@@ -215,7 +219,7 @@ export default class GaussianProcess extends Vue {
   onUserInfo() {
     if (this.username && this.password) {
       listProjects(this.username, this.password)
-        .then((p) => {
+        .then(p => {
           this.projects = p;
           if (this.projects.length > 0) {
             this.selectedProject = this.projects[0];
@@ -232,8 +236,8 @@ export default class GaussianProcess extends Vue {
   onProjectSelection() {
     if (this.selectedProject) {
       listDevices(this.username, this.password, this.selectedProject.name, [
-        "temperature",
-      ]).then((d) => {
+        "temperature"
+      ]).then(d => {
         this.devices = d;
         if (this.devices.length > 0) {
           this.selectedDevice = this.devices[0];
@@ -246,33 +250,33 @@ export default class GaussianProcess extends Vue {
   onDeviceSelection() {
     if (this.selectedDevice) {
       fetchEvents(this.username, this.password, this.selectedDevice.name, [
-        "temperature",
+        "temperature"
       ])
-        .then((events) =>
+        .then(events =>
           events.length
             ? events
             : Promise.reject(
                 `No events found for ${this.selectedDevice?.name} `
               )
         )
-        .then((events) =>
-          events.map((e) => {
+        .then(events =>
+          events.map(e => {
             if (!e.data.temperature) {
               return null;
             }
             return {
               timestamp:
                 new Date(e.data.temperature.updateTime).getTime() / 1000,
-              value: e.data.temperature.value,
+              value: e.data.temperature.value
             };
           })
         )
-        .then((events) => {
-          const filtered = events.filter((e) => e) as DataPoint[];
-          this.y = filtered.map((e) => e.value);
+        .then(events => {
+          const filtered = events.filter(e => e) as DataPoint[];
+          this.y = filtered.map(e => e.value);
           const N = this.y.length;
           const idx = [...Array(N).keys()];
-          this.x = idx.map((i) => -1 * i).reverse();
+          this.x = idx.map(i => -1 * i).reverse();
           this.doGP();
         })
         .catch(console.error);
@@ -280,7 +284,7 @@ export default class GaussianProcess extends Vue {
   }
 
   doGP() {
-    rust.then((rust) => {
+    rust.then(rust => {
       const gp = rust.GaussianProcess.new(
         Float64Array.from(this.x),
         Float64Array.from(this.y)
@@ -291,7 +295,7 @@ export default class GaussianProcess extends Vue {
         this.amplitude,
         this.noiseY
       );
-      const time: number[] = this.sampleX.map((x) => (x * 15) / 60);
+      const time: number[] = this.sampleX.map(x => (x * 15) / 60);
       const createPoint = (y: number, i: number) => {
         return { y, x: time[i] };
       };
@@ -317,50 +321,50 @@ export default class GaussianProcess extends Vue {
               pointBorderWidth: 2,
               showLine: false,
               pointRadius: 5,
-              fill: false,
+              fill: false
             },
             {
               data: mean,
               label: "Posterior Mean",
               fill: false,
               borderColor: "#F0522C",
-              pointRadius: 0,
+              pointRadius: 0
             },
             {
               data: ciLow,
               fill: false,
               borderColor: "rgba(0, 0, 255, 0.5)",
-              pointRadius: 0,
+              pointRadius: 0
             },
             {
               data: ciHigh,
               fill: "-1",
               borderColor: "rgba(0, 0, 255, 0.5)",
               backgroundColor: "rgba(0, 0, 255, 0.1)",
-              pointRadius: 0,
-            },
+              pointRadius: 0
+            }
           ];
         }
         if (this.chart.options.plugins?.zoom?.pan) {
           this.chart.options.plugins.zoom.pan = {
             ...this.chart.options.plugins.zoom.pan,
             rangeMin: {
-              x: time[0],
+              x: time[0]
             },
             rangeMax: {
-              x: time[time.length - 1],
-            },
+              x: time[time.length - 1]
+            }
           };
         }
         if (this.chart.options.plugins?.zoom?.pan) {
           this.chart.options.plugins.zoom.zoom = {
             ...this.chart.options.plugins.zoom.zoom,
             rangeMin: {
-              x: time[0],
+              x: time[0]
             },
             rangeMax: {
-              x: time[time.length - 1],
-            },
+              x: time[time.length - 1]
+            }
           };
         }
         this.chart.update();

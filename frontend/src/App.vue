@@ -9,6 +9,8 @@
 
 <style lang="scss">
 @import url("https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@500&display=swap");
+@import "~bootstrap";
+@import "~bootstrap-vue";
 #app {
   font-family: "Abhaya Libre", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
