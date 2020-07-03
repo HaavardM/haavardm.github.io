@@ -287,13 +287,13 @@ export default class GaussianProcess extends Vue {
     rust.then(rust => {
       const gp = rust.GaussianProcess.new(
         Float64Array.from(this.x),
-        Float64Array.from(this.y)
-      );
-      const post = gp.get_posterior(
-        this.sampleX,
+        Float64Array.from(this.y),
         this.lengthScale,
         this.amplitude,
         this.noiseY
+      );
+      const post = gp.posterior(
+        Float64Array.from(this.sampleX),
       );
       const time: number[] = this.sampleX.map(x => (x * 15) / 60);
       const createPoint = (y: number, i: number) => {
