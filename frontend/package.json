@@ -15,6 +15,7 @@
     "chart.js": "^2.9.3",
     "chartjs-plugin-zoom": "^0.7.7",
     "core-js": "^3.6.5",
+    "env": "0.0.2",
     "oidc-client": "^1.10.1",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.3",
