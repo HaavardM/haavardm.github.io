@@ -70,7 +70,7 @@
             />
           </div>
           <div class="col">
-            <label for="lengthScale">Length Scale (Smoothness)</label>
+            <label for="lengthScale">Length Scale</label>
             <input
               id="lengthScale"
               class="form-control"
@@ -78,6 +78,17 @@
               step="0.00005"
               type="number"
               v-model="lengthScale"
+            />
+          </div>
+          <div class="col">
+            <label for="lengthScalePeriodic">Length Scale Periodic</label>
+            <input
+              id="lengthScalePeriodic"
+              class="form-control"
+              @change="doGP"
+              step="0.00005"
+              type="number"
+              v-model="lengthScalePeriodic"
             />
           </div>
           <div class="col">
@@ -89,6 +100,17 @@
               step="0.00005"
               type="number"
               v-model="amplitude"
+            />
+          </div>
+          <div class="col">
+            <label for="period">Period</label>
+            <input
+              id="period"
+              class="form-control"
+              @change="doGP"
+              step="0.00005"
+              type="number"
+              v-model="period"
             />
           </div>
         </div>
@@ -132,7 +154,9 @@ export default class GaussianProcess extends Vue {
   @Ref("canvas") canvas!: HTMLCanvasElement;
 
   lengthScale = 1;
+  lengthScalePeriodic = 1;
   amplitude = 1;
+  period = 1;
   username = "";
   password = "";
 
@@ -150,10 +174,12 @@ export default class GaussianProcess extends Vue {
   chart: Chart | undefined;
 
   get sampleX(): number[] {
-    const N = Math.ceil(this.x[this.x.length - 1] - this.x[0]);
+    const N = Math.ceil(-1 * this.x[0]);
     return [
       ...[...Array(N).keys()].map(i => -1 * i).reverse(),
-      ...[...Array(Math.ceil(this.lengthScale)).keys()].map(i => i + 1)
+      ...[...Array(Math.ceil((this.lengthScale * 60) / 2 / 15)).keys()].map(
+        i => i + 1
+      )
     ].flatMap(x => [...Array(10).keys()].reverse().map(i => x - i / 10));
   }
 
@@ -188,11 +214,11 @@ export default class GaussianProcess extends Vue {
             zoom: {
               pan: {
                 enabled: true,
-                mode: "x"
+                mode: "xy"
               },
               zoom: {
                 enabled: true,
-                mode: "x"
+                mode: "xy"
               }
             }
           },
@@ -288,13 +314,13 @@ export default class GaussianProcess extends Vue {
       const gp = rust.GaussianProcess.new(
         Float64Array.from(this.x),
         Float64Array.from(this.y),
-        this.lengthScale,
+        (this.lengthScale * 60) / 15,
+        (this.lengthScalePeriodic * 60) / 15,
         this.amplitude,
+        (this.period * 60) / 15,
         this.noiseY
       );
-      const post = gp.posterior(
-        Float64Array.from(this.sampleX),
-      );
+      const post = gp.posterior(Float64Array.from(this.sampleX));
       const time: number[] = this.sampleX.map(x => (x * 15) / 60);
       const createPoint = (y: number, i: number) => {
         return { y, x: time[i] };
@@ -345,28 +371,38 @@ export default class GaussianProcess extends Vue {
             }
           ];
         }
+        let max = ciHigh.map(l => l.y).reduce((f, s) => Math.max(f, s));
+        let min = ciLow.map(l => l.y).reduce((f, s) => Math.min(f, s));
+        const diff = max - min;
+        max = max + 0.1 * diff;
+        min = min - 0.1 * diff;
         if (this.chart.options.plugins?.zoom?.pan) {
           this.chart.options.plugins.zoom.pan = {
             ...this.chart.options.plugins.zoom.pan,
             rangeMin: {
-              x: time[0]
+              x: time[0],
+              y: min
             },
             rangeMax: {
-              x: time[time.length - 1]
+              x: time[time.length - 1],
+              y: max
             }
           };
         }
-        if (this.chart.options.plugins?.zoom?.pan) {
+        if (this.chart.options.plugins?.zoom?.zoom) {
           this.chart.options.plugins.zoom.zoom = {
             ...this.chart.options.plugins.zoom.zoom,
             rangeMin: {
-              x: time[0]
+              x: time[0],
+              y: min
             },
             rangeMax: {
-              x: time[time.length - 1]
+              x: time[time.length - 1],
+              y: max
             }
           };
         }
+        console.log(this.chart.options.plugins?.zoom.zoom);
         this.chart.update();
       }
     });
