@@ -1,4 +1,5 @@
 extern crate nalgebra as na;
+extern crate optimization as opt;
 
 type Matrix = na::DMatrix<f64>;
 type Vector = na::DVector<f64>;
@@ -47,15 +48,15 @@ impl Into<na::Vector4<f64>> for KernelDerivative {
     }
 }
 
-struct Kernel {
-    length_scale: f64,
-    length_scale_periodic: f64,
-    amplitude: f64,
-    period: f64,
+pub struct Kernel {
+    pub length_scale: f64,
+    pub length_scale_periodic: f64,
+    pub amplitude: f64,
+    pub period: f64,
 }
 
 impl Kernel {
-    pub fn new(amplitude: f64, ls: f64, lsp: f64, period: f64) -> Kernel {
+    fn new(amplitude: f64, ls: f64, lsp: f64, period: f64) -> Kernel {
         return Kernel {
             length_scale: ls,
             length_scale_periodic: lsp,
@@ -63,9 +64,7 @@ impl Kernel {
             amplitude: amplitude,
         };
     }
-}
 
-impl Kernel {
     fn periodic_exp_inner(&self, diff: f64) -> f64 {
         use std::f64::consts::PI;
         return (-2f64 / self.length_scale_periodic.powf(2.0))
@@ -208,6 +207,26 @@ fn loglikelihood(x: &Vector, y: &Vector, kernel: &Kernel, noise: f64) -> Option<
     return Some(ll / 2.0);
 }
 
+pub fn optimize(x: &Vector, y: &Vector, noise: f64) -> Kernel {
+    let f = opt::NumericalDifferentiation::new(opt::Func(|p| {
+        let kernel = Kernel::new(p[0], p[1], p[2], p[3]);
+        let nll = -loglikelihood(x, y, &kernel, noise).expect("Unable to calculate likelihood");
+        println!("{}", nll);
+        return nll;
+    }));
+    let gd = opt::GradientDescent::new();
+    let gd = gd.max_iterations(Some(1000));
+    use opt::Minimizer;
+    let res = gd.minimize(&f, vec![1.0, 1.0, 1.0, 1.0]);
+
+    return Kernel::new(
+        res.position[0],
+        res.position[1],
+        res.position[2],
+        res.position[3],
+    );
+}
+
 fn dloglikelihood(ker: &Kernel, x: &Vector, y: &Vector, noise: f64) -> na::Vector4<f64> {
     let dim = x.nrows();
 
@@ -248,6 +267,18 @@ fn dloglikelihood(ker: &Kernel, x: &Vector, y: &Vector, noise: f64) -> na::Vecto
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn optimize() {
+        let x = na::DVector::from_vec(vec![1.0, 2.0, 3.0, 4.0]);
+        let y = na::DVector::from_vec(vec![1.0, 10.0, 20.0, 1.0]);
+
+        let res = super::optimize(&x, &y, 1e-6);
+        println!(
+            "{}, {}, {}, {}",
+            res.amplitude, res.length_scale, res.length_scale_periodic, res.period
+        );
+    }
 
     #[test]
     fn gp() {

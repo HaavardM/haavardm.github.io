@@ -44,6 +44,7 @@ dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "nalgebra",
+ "optimization",
  "serde",
  "serde_derive",
  "serde_json",
@@ -181,6 +182,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "optimization"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b23fac7398d2a9edcd3a2f4cb6e045c6cb668cfcd0071edf37217941b6a9a01"
+dependencies = [
+ "log",
+ "rand",
+ "rand_distr",
+ "rand_pcg",
+]
+
+[[package]]
 name = "paste"
 version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -275,6 +288,15 @@ name = "rand_hc"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
+dependencies = [
+ "rand_core",
+]
+
+[[package]]
+name = "rand_pcg"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16abd0c1b639e9eb4d7c50c0b8100b0d0f849be2349829c740fe8e6eb4816429"
 dependencies = [
  "rand_core",
 ]

@@ -69,6 +69,17 @@ impl GaussianProcess {
         }
     }
 
+    pub fn optimize_params(x: Vec<f64>, y: Vec<f64>, noise: f64) {
+        let x = na::DVector::<f64>::from_vec(x);
+        let y = na::DVector::<f64>::from_vec(y);
+
+        let res = gp::optimize(&x, &y, noise);
+        alert(&format!(
+            "{}, {}, {}, {}",
+            res.amplitude, res.length_scale, res.length_scale_periodic, res.period
+        ))
+    }
+
     pub fn posterior(&self, x: Vec<f64>) -> Result<GPPosterior, JsValue> {
         let x: na::DVector<f64> = na::DVector::from_vec(x);
         let (mean, ci) = match self.process.posterior(&x) {

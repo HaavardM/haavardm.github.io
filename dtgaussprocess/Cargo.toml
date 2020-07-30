@@ -19,6 +19,7 @@ serde = "1.0.80"
 js-sys = "^0.3"
 nalgebra = "^0.21"
 console_error_panic_hook = "^0.1"
+optimization = "^0.2"
 
 [profile.release]
 lto = true
