@@ -3,6 +3,8 @@ name = "dtgaussprocess"
 version = "0.1.0"
 authors = ["Håvard Skåra Mellbye <havardmellbye@gmail.com>"]
 edition = "2018"
+description = "Implementation of a Gaussian Process using nalgebra. Intended for use in browser with WASM."
+repository = "github.com/HaavardM/playground"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

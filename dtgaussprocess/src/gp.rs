@@ -1,12 +1,49 @@
 extern crate nalgebra as na;
 
-struct Mean {
+type Matrix = na::DMatrix<f64>;
+type Vector = na::DVector<f64>;
+
+struct ConstMean {
     c: f64,
 }
 
-impl Mean {
-    fn func(&self, x: &na::DVector<f64>) -> na::DVector<f64> {
+impl ConstMean {
+    fn func(&self, x: &Vector) -> Vector {
         return na::DVector::<f64>::from_element(x.nrows(), self.c);
+    }
+}
+
+struct KernelDerivative {
+    data: na::Vector4<f64>,
+}
+
+impl KernelDerivative {
+    fn amplitude(&self) -> f64 {
+        self.data.x
+    }
+
+    fn length_scale_squared_exp(&self) -> f64 {
+        self.data.y
+    }
+
+    fn length_scale_periodic_exp(&self) -> f64 {
+        self.data.z
+    }
+
+    fn period(&self) -> f64 {
+        self.data.w
+    }
+}
+
+impl From<na::Vector4<f64>> for KernelDerivative {
+    fn from(v: na::Vector4<f64>) -> KernelDerivative {
+        KernelDerivative { data: v }
+    }
+}
+
+impl Into<na::Vector4<f64>> for KernelDerivative {
+    fn into(self) -> na::Vector4<f64> {
+        self.data
     }
 }
 
@@ -44,6 +81,40 @@ impl Kernel {
         return self.amplitude
             * (self.periodic_exp_inner(diff) + self.squared_exp_inner(diff)).exp();
     }
+
+    fn derivative(&self, x1: &f64, x2: &f64) -> KernelDerivative {
+        use std::f64::consts::PI;
+        let diff = x2 - x1;
+        let sdiff = diff * diff;
+        let adiff = diff.abs();
+
+        let da = (self.periodic_exp_inner(diff) + self.squared_exp_inner(diff)).exp();
+        let dl1 = -sdiff * self.f(x1, x2) / (self.length_scale.powf(3.0));
+        let dl2 = (4.0 * (PI * adiff / self.period).sin().powf(2.0)) * self.f(x1, x2)
+            / self.length_scale_periodic.powf(3.0);
+        let trig = PI * adiff / self.length_scale_periodic;
+        let dp = 4.0 * PI * adiff * trig.sin() * trig.cos() * self.f(x1, x2)
+            / (self.length_scale_periodic * self.length_scale_periodic * self.period * self.period);
+        KernelDerivative::from(na::Vector4::new(da, dl1, dl2, dp))
+    }
+
+    fn matrix(&self, x1: &Vector, x2: &Vector) -> Matrix {
+        let dim1 = x1.nrows();
+        let dim2 = x2.nrows();
+        unsafe {
+            let mut m = Matrix::new_uninitialized(dim1, dim2);
+            self.matrix_mut(x1, x2, &mut m);
+            return m;
+        }
+    }
+
+    fn matrix_mut(&self, m1: &Vector, m2: &Vector, out: &mut Matrix) {
+        let mut data = m2
+            .iter()
+            .flat_map(|row1| m1.iter().map(move |row2| self.f(row1, row2)));
+        // Builds matrix COLUMN BY COLUMN
+        out.iter_mut().for_each(|x| *x = data.next().unwrap());
+    }
 }
 
 pub struct HyperParameters {
@@ -54,17 +125,17 @@ pub struct HyperParameters {
 }
 
 pub struct GaussianProcess {
-    mean: Mean,
+    mean: ConstMean,
     kernel: Kernel,
     train_mat: na::Cholesky<f64, na::Dynamic>,
-    train_x: na::DVector<f64>,
-    alpha: na::DVector<f64>,
+    train_x: Vector,
+    alpha: Vector,
 }
 
 impl GaussianProcess {
     pub fn new(
-        inputs_x: &na::DVector<f64>,
-        inputs_y: &na::DVector<f64>,
+        inputs_x: &Vector,
+        inputs_y: &Vector,
         params: HyperParameters,
         noise: f64,
     ) -> Option<GaussianProcess> {
@@ -74,10 +145,10 @@ impl GaussianProcess {
             params.amplitude,
             params.period,
         );
-        let mean = Mean { c: inputs_y.mean() };
+        let mean = ConstMean { c: inputs_y.mean() };
 
-        let noise_mat = na::DMatrix::<f64>::identity(inputs_x.nrows(), inputs_x.nrows()) * noise;
-        let ker_mat = ker_mat(&ker, &inputs_x, &inputs_x) + noise_mat;
+        let noise_mat = Matrix::identity(inputs_x.nrows(), inputs_x.nrows()) * noise;
+        let ker_mat = ker.matrix(&inputs_x, &inputs_x) + noise_mat;
 
         let train_mat = match na::Cholesky::new(ker_mat) {
             Some(c) => c,
@@ -95,9 +166,9 @@ impl GaussianProcess {
     }
     pub fn posterior(
         &self,
-        x: &na::DVector<f64>,
-    ) -> Option<(na::DVector<f64>, na::MatrixMN<f64, na::Dynamic, na::U2>)> {
-        let prior_ker_mat = ker_mat(&self.kernel, &x, &self.train_x);
+        x: &Vector,
+    ) -> Option<(Vector, na::MatrixMN<f64, na::Dynamic, na::U2>)> {
+        let prior_ker_mat = self.kernel.matrix(&x, &self.train_x);
         let post_mean = self.mean.func(&x) + &prior_ker_mat * &self.alpha;
         let v_mat = self
             .train_mat
@@ -105,11 +176,11 @@ impl GaussianProcess {
             .solve_lower_triangular(&prior_ker_mat.transpose())
             .expect("Unable to solve")
             .transpose();
-        let cov = ker_mat(&self.kernel, &x, &x) - &v_mat * v_mat.transpose();
+        let cov = self.kernel.matrix(&x, &x) - &v_mat * v_mat.transpose();
 
-        let std: na::DVector<f64> = cov.map_diagonal(|e| e.sqrt());
-        let ci_high: na::DVector<f64> = &post_mean + &std * 1.95;
-        let ci_low: na::DVector<f64> = &post_mean - &std * 1.95;
+        let std: Vector = cov.map_diagonal(|e| e.sqrt());
+        let ci_high: Vector = &post_mean + &std * 1.95;
+        let ci_low: Vector = &post_mean - &std * 1.95;
 
         return Some((
             post_mean,
@@ -118,27 +189,60 @@ impl GaussianProcess {
     }
 }
 
-fn ker_mat(ker: &Kernel, m1: &na::DVector<f64>, m2: &na::DVector<f64>) -> na::DMatrix<f64> {
-    let dim1 = m1.nrows();
-    let dim2 = m2.nrows();
-    unsafe {
-        let mut m = na::DMatrix::<f64>::new_uninitialized(dim1, dim2);
-        ker_mat_mut(ker, m1, m2, &mut m);
-        return m;
-    }
+fn loglikelihood(x: &Vector, y: &Vector, kernel: &Kernel, noise: f64) -> Option<f64> {
+    let n = x.nrows();
+    let kernel = kernel.matrix(x, x) + Matrix::identity(n, n) * noise;
+    let kernel_det = kernel.determinant();
+    let kernel = match na::Cholesky::new(kernel) {
+        Some(m) => m,
+        None => return None,
+    };
+    let alpha = match kernel.l_dirty().solve_lower_triangular(y) {
+        Some(a) => a,
+        None => return None,
+    };
+    use std::f64::consts::PI;
+    let ll = -(alpha.transpose() * alpha).x;
+    let ll = ll - (2.0 * PI * kernel_det).ln();
+    let ll = ll - (n as f64) * (2.0 * PI).ln();
+    return Some(ll / 2.0);
 }
 
-fn ker_mat_mut(
-    ker: &Kernel,
-    m1: &na::DVector<f64>,
-    m2: &na::DVector<f64>,
-    out: &mut na::DMatrix<f64>,
-) {
-    let mut data = m2
+fn dloglikelihood(ker: &Kernel, x: &Vector, y: &Vector, noise: f64) -> na::Vector4<f64> {
+    let dim = x.nrows();
+
+    let data = x
         .iter()
-        .flat_map(|row1| m1.iter().map(move |row2| ker.f(row1, row2)));
-    // Builds matrix COLUMN BY COLUMN
-    out.iter_mut().for_each(|x| *x = data.next().unwrap());
+        .flat_map(|row1| x.iter().map(move |row2| ker.derivative(row1, row2)))
+        .map(|x| {
+            (
+                (x.amplitude(), x.length_scale_squared_exp()),
+                (x.length_scale_periodic_exp(), x.period()),
+            )
+        });
+    let (temp1, temp2): (Vec<(f64, f64)>, Vec<(f64, f64)>) = data.unzip();
+    let (d0, d1): (Vec<f64>, Vec<f64>) = temp1.iter().map(|x| *x).unzip();
+    let (d2, d3): (Vec<f64>, Vec<f64>) = temp2.iter().map(|x| *x).unzip();
+
+    let da = Matrix::from_iterator(dim, dim, d0);
+    let dl1 = Matrix::from_iterator(dim, dim, d1);
+    let dl2 = Matrix::from_iterator(dim, dim, d2);
+    let dp = Matrix::from_iterator(dim, dim, d3);
+
+    let kernel = ker.matrix(x, x) + Matrix::identity(dim, dim) * noise;
+    let kernel = na::Cholesky::new(kernel).expect("Unable to compute cholesky");
+
+    // %\frac{ln(PI*det(A(x))}{dx} = \frac{PI*trace(adj(A(x))*\frac{dA(x)}{dx})}{PI*det(A(x))} = trace(A^{-1}(x)*\frac{A(x)}{dx}))
+    let da: f64 =
+        -(y.transpose() * &da * y).get(0).expect("Not a 1v1 matrix") - (kernel.solve(&da)).trace();
+    let dl1 = -(y.transpose() * &dl1 * y).get(0).expect("Not a 1v1 matrix")
+        - (kernel.solve(&dl1)).trace();
+    let dl2 = -(y.transpose() * &dl2 * y).get(0).expect("Not a 1v1 matrix")
+        - (kernel.solve(&dl2)).trace();
+    let dp =
+        -(y.transpose() * &dp * y).get(0).expect("Not a 1v1 matrix") - (kernel.solve(&dp)).trace();
+
+    na::Vector4::new(da, dl1, dl2, dp)
 }
 
 #[cfg(test)]
@@ -153,12 +257,12 @@ mod tests {
 
         let ker = Kernel::new(1.0, 1.0, 1.0, 1.0);
 
-        let noise_mat = na::DMatrix::<f64>::identity(x.nrows(), x.nrows()) * 1.0;
-        let kmat = ker_mat(&ker, &x, &x) + noise_mat;
+        let noise_mat = Matrix::identity(x.nrows(), x.nrows()) * 1.0;
+        let kmat = ker.matrix(&x, &x) + noise_mat;
         let chol = na::Cholesky::new(kmat.clone()).expect("Unable to compute cholesky");
         let alpha = chol.solve(&y);
 
-        let s_ker_mat = ker_mat(&ker, &xs, &x);
+        let s_ker_mat = ker.matrix(&xs, &x);
         assert!((kmat.clone() * &alpha).relative_eq(&y, 1e-9, 1e-9));
         println!("{}", &kmat.to_string());
         println!("{}", &chol.l().to_string());
