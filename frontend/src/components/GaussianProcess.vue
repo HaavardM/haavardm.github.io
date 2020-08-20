@@ -174,13 +174,13 @@ export default class GaussianProcess extends Vue {
   chart: Chart | undefined;
 
   get sampleX(): number[] {
-    const N = Math.ceil(-1 * this.x[0]);
+    const N = Math.min(this.x.length * 5, 1000);
+    const diff = this.x[this.x.length - 1] - this.x[0];
     return [
-      ...[...Array(N).keys()].map(i => -1 * i).reverse(),
-      ...[...Array(Math.ceil((this.lengthScale * 60) / 2 / 15)).keys()].map(
-        i => i + 1
+      ...[...Array(Math.ceil(N * 1.1)).keys()].map(
+        i => this.x[0] + (diff * i) / N
       )
-    ].flatMap(x => [...Array(10).keys()].reverse().map(i => x - i / 10));
+    ];
   }
 
   mounted() {
@@ -301,8 +301,9 @@ export default class GaussianProcess extends Vue {
           const filtered = events.filter(e => e) as DataPoint[];
           this.y = filtered.map(e => e.value);
           const N = this.y.length;
-          const idx = [...Array(N).keys()];
-          this.x = idx.map(i => -1 * i).reverse();
+          this.x = filtered
+            .map(e => (e.timestamp - Date.now() / 1000) / 3600)
+            .reverse();
           this.doGP();
         })
         .catch(console.error);
@@ -314,14 +315,14 @@ export default class GaussianProcess extends Vue {
       const gp = rust.GaussianProcess.new(
         Float64Array.from(this.x),
         Float64Array.from(this.y),
-        (this.lengthScale * 60) / 15,
-        (this.lengthScalePeriodic * 60) / 15,
+        this.lengthScale,
+        this.lengthScalePeriodic,
         this.amplitude,
-        (this.period * 60) / 15,
+        this.period,
         this.noiseY
       );
       const post = gp.posterior(Float64Array.from(this.sampleX));
-      const time: number[] = this.sampleX.map(x => (x * 15) / 60);
+      const time: number[] = this.sampleX;
       const createPoint = (y: number, i: number) => {
         return { y, x: time[i] };
       };
@@ -329,7 +330,7 @@ export default class GaussianProcess extends Vue {
       const ciLow: Point[] = Array.from(post.ci_low()).map(createPoint);
       const ciHigh: Point[] = Array.from(post.ci_high()).map(createPoint);
       const measurements: Point[] = this.y.map((y, i) => {
-        return { x: (this.x[i] * 15) / 60, y };
+        return { x: this.x[i], y };
       });
 
       if (this.chart) {
