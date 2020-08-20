@@ -104,7 +104,7 @@ impl Kernel {
     fn df_dls(&self, x1: &f64, x2: &f64) -> f64 {
         let diff = x2 - x1;
         let sdiff = diff * diff;
-        -sdiff * self.f(x1, x2) / (self.length_scale.powf(3.0))
+        sdiff * self.f(x1, x2) / (self.length_scale.powf(3.0))
     }
 
     fn df_dlp(&self, x1: &f64, x2: &f64) -> f64 {
@@ -276,14 +276,111 @@ impl GaussianProcess {
         let dp = aa * &temp_kernel;
         self.train_mat.solve(&mut temp_kernel);
         let dp = (dp - temp_kernel).trace() / 2.0;
-
         na::Vector4::new(da, dls, dlp, dp)
     }
+}
+
+struct ObjectiveFunc {
+    x: Vector,
+    y: Vector,
+    noise: f64,
+}
+
+impl opt::Function for ObjectiveFunc {
+    fn value(&self, x: &[f64]) -> f64 {
+        let gp = GaussianProcess::new(
+            &self.x,
+            &self.y,
+            HyperParameters {
+                amplitude: x[0],
+                length_scale_squared_exp: x[1],
+                length_scale_periodic_exp: x[2],
+                period: x[3],
+            },
+            self.noise,
+        )
+        .expect("Unable to create GP");
+        let val = -gp
+            .loglikelihood()
+            .expect("Unable to calulcate loglikelihood");
+        //println!("[{}, {}, {}, {}] -> {}", x[0], x[1], x[2], x[3], val);
+        return val;
+    }
+}
+
+impl opt::Function1 for ObjectiveFunc {
+    fn gradient(&self, x: &[f64]) -> Vec<f64> {
+        let gp = GaussianProcess::new(
+            &self.x,
+            &self.y,
+            HyperParameters {
+                amplitude: x[0],
+                length_scale_squared_exp: x[1],
+                length_scale_periodic_exp: x[2],
+                period: x[3],
+            },
+            self.noise,
+        )
+        .expect("Unable to create GP");
+        unsafe {
+            let g: Vec<f64> = gp
+                .dloglikelihood()
+                .normalize()
+                .iter()
+                .map(|x| -*x)
+                .collect();
+            println!("Gradient: [{}, {}, {}, {}]", g[0], g[1], g[2], g[3]);
+            return g;
+        }
+    }
+}
+
+fn optimize_params(x: Vector, y: Vector, noise: f64) -> (HyperParameters, f64) {
+    use opt::Minimizer;
+    let o = opt::GradientDescent::new()
+        .max_iterations(Some(10))
+        .gradient_tolerance(1e-2);
+    //.line_search(opt::ArmijoLineSearch::new(0.2, 0.5, 0.8));
+
+    let obj_fn = ObjectiveFunc {
+        x: x,
+        y: y,
+        noise: noise,
+    };
+
+    let res = o.minimize(&obj_fn, vec![10.0, 10.0, 10.0, 10.0]);
+
+    return (
+        HyperParameters {
+            amplitude: res.position[0],
+            length_scale_squared_exp: res.position[1],
+            length_scale_periodic_exp: res.position[2],
+            period: res.position[3],
+        },
+        res.value,
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_optimize() {
+        let x = Vector::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);
+        let y = Vector::from_vec(vec![1.0, 100.0, 50.0, 2.0, -5.0, 3.0, 30.0, 80.0]);
+
+        let res = optimize_params(x, y, 1e-6f64);
+        let params = res.0;
+        println!(
+            "{}, {}, {}, {} -> {}",
+            params.amplitude,
+            params.length_scale_squared_exp,
+            params.length_scale_periodic_exp,
+            params.period,
+            res.1
+        )
+    }
 
     #[test]
     fn cholesky_det() {
