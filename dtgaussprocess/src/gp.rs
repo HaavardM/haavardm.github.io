@@ -19,10 +19,6 @@ struct KernelDerivative {
 }
 
 impl KernelDerivative {
-    fn amplitude(&self) -> f64 {
-        self.data.x
-    }
-
     fn length_scale_squared_exp(&self) -> f64 {
         self.data.y
     }
@@ -216,35 +212,25 @@ impl GaussianProcess {
     }
     fn loglikelihood(&self) -> Option<f64> {
         use std::f64::consts::PI;
-        let kernel_det = self
+        let log_kernel_det = self
             .train_mat
             .l_dirty()
             .diagonal()
             .iter()
-            .fold(1.0, |x, y| x * y)
-            .powf(2.0);
+            .map(|x| x.ln())
+            .fold(1.0, |x, y| x + y);
         let n = self.train_x.nrows();
-        let ll = -(self.beta.transpose() * &self.beta).x;
-        let ll = ll - (2.0 * PI * kernel_det);
-        let ll = ll - (n as f64) * (2.0 * PI).ln();
-        return Some(ll / 2.0);
+        let ll = -(self.beta.transpose() * &self.beta).x / 2.0;
+        let ll = ll - log_kernel_det;
+        let ll = ll - (n as f64) * (2.0 * PI).ln() / 2.0;
+        return Some(ll);
     }
 
-    unsafe fn dloglikelihood(&self) -> na::Vector4<f64> {
+    unsafe fn dloglikelihood(&self) -> na::Vector3<f64> {
         let n = self.train_x.nrows();
         let mut temp_kernel = Matrix::new_uninitialized(n, n);
 
         let aa = &self.alpha * self.alpha.transpose();
-        build_kernel_matrix_mut(
-            &self.train_x,
-            &self.train_x,
-            &|x1, x2| self.kernel.df_da(x1, x2),
-            &mut temp_kernel,
-        );
-
-        let da = &aa * &temp_kernel;
-        self.train_mat.solve_mut(&mut temp_kernel);
-        let da = (da - &temp_kernel).trace() / 2.0;
 
         build_kernel_matrix_mut(
             &self.train_x,
@@ -276,7 +262,37 @@ impl GaussianProcess {
         let dp = aa * &temp_kernel;
         self.train_mat.solve(&mut temp_kernel);
         let dp = (dp - temp_kernel).trace() / 2.0;
-        na::Vector4::new(da, dls, dlp, dp)
+        na::Vector3::new(/*da, */ dls, dlp, dp)
+    }
+    pub fn optimize_params(
+        x: Vector,
+        y: Vector,
+        amplitude: f64,
+        noise: f64,
+    ) -> (HyperParameters, f64) {
+        use opt::Minimizer;
+        let o = opt::GradientDescent::new()
+            .max_iterations(Some(100))
+            .gradient_tolerance(1e-2)
+            .line_search(opt::FixedStepWidth::new(1.0));
+
+        let obj_fn = ObjectiveFunc {
+            x: x,
+            y: y,
+            noise: noise,
+        };
+
+        let res = o.minimize(&obj_fn, vec![2.0, 2.0, 2.0]);
+
+        return (
+            HyperParameters {
+                amplitude: amplitude,
+                length_scale_squared_exp: res.position[0],
+                length_scale_periodic_exp: res.position[1],
+                period: res.position[2],
+            },
+            res.value,
+        );
     }
 }
 
@@ -292,10 +308,10 @@ impl opt::Function for ObjectiveFunc {
             &self.x,
             &self.y,
             HyperParameters {
-                amplitude: x[0],
-                length_scale_squared_exp: x[1],
-                length_scale_periodic_exp: x[2],
-                period: x[3],
+                amplitude: 1.0,
+                length_scale_squared_exp: x[0],
+                length_scale_periodic_exp: x[1],
+                period: x[2],
             },
             self.noise,
         )
@@ -303,7 +319,7 @@ impl opt::Function for ObjectiveFunc {
         let val = -gp
             .loglikelihood()
             .expect("Unable to calulcate loglikelihood");
-        //println!("[{}, {}, {}, {}] -> {}", x[0], x[1], x[2], x[3], val);
+        println!("[{:.5}, {:.5}, {:.5}] -> {}", x[0], x[1], x[2], val);
         return val;
     }
 }
@@ -314,10 +330,10 @@ impl opt::Function1 for ObjectiveFunc {
             &self.x,
             &self.y,
             HyperParameters {
-                amplitude: x[0],
-                length_scale_squared_exp: x[1],
-                length_scale_periodic_exp: x[2],
-                period: x[3],
+                amplitude: 1.0,
+                length_scale_squared_exp: x[0],
+                length_scale_periodic_exp: x[1],
+                period: x[2],
             },
             self.noise,
         )
@@ -329,36 +345,10 @@ impl opt::Function1 for ObjectiveFunc {
                 .iter()
                 .map(|x| -*x)
                 .collect();
-            println!("Gradient: [{}, {}, {}, {}]", g[0], g[1], g[2], g[3]);
+            println!("Gradient: [{:.5}, {:.5}, {:.5}]", g[0], g[1], g[2]);
             return g;
         }
     }
-}
-
-fn optimize_params(x: Vector, y: Vector, noise: f64) -> (HyperParameters, f64) {
-    use opt::Minimizer;
-    let o = opt::GradientDescent::new()
-        .max_iterations(Some(10))
-        .gradient_tolerance(1e-2);
-    //.line_search(opt::ArmijoLineSearch::new(0.2, 0.5, 0.8));
-
-    let obj_fn = ObjectiveFunc {
-        x: x,
-        y: y,
-        noise: noise,
-    };
-
-    let res = o.minimize(&obj_fn, vec![10.0, 10.0, 10.0, 10.0]);
-
-    return (
-        HyperParameters {
-            amplitude: res.position[0],
-            length_scale_squared_exp: res.position[1],
-            length_scale_periodic_exp: res.position[2],
-            period: res.position[3],
-        },
-        res.value,
-    );
 }
 
 #[cfg(test)]
@@ -370,10 +360,10 @@ mod tests {
         let x = Vector::from_vec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]);
         let y = Vector::from_vec(vec![1.0, 100.0, 50.0, 2.0, -5.0, 3.0, 30.0, 80.0]);
 
-        let res = optimize_params(x, y, 1e-6f64);
+        let res = GaussianProcess::optimize_params(x, y, 1.0, 1e-6f64);
         let params = res.0;
         println!(
-            "{}, {}, {}, {} -> {}",
+            "{:.5}, {:.5}, {:.5}, {:.5} -> {}",
             params.amplitude,
             params.length_scale_squared_exp,
             params.length_scale_periodic_exp,

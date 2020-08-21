@@ -70,6 +70,17 @@
             />
           </div>
           <div class="col">
+            <label for="amplitude">Amplitude</label>
+            <input
+              id="amplitude"
+              class="form-control"
+              @change="doGP"
+              step="0.00005"
+              type="number"
+              v-model="amplitude"
+            />
+          </div>
+          <div class="col">
             <label for="lengthScale">Length Scale</label>
             <input
               id="lengthScale"
@@ -92,17 +103,6 @@
             />
           </div>
           <div class="col">
-            <label for="amplitude">Amplitude</label>
-            <input
-              id="amplitude"
-              class="form-control"
-              @change="doGP"
-              step="0.00005"
-              type="number"
-              v-model="amplitude"
-            />
-          </div>
-          <div class="col">
             <label for="period">Period</label>
             <input
               id="period"
@@ -112,6 +112,11 @@
               type="number"
               v-model="period"
             />
+          </div>
+        </div>
+        <div class="row my-4">
+          <div class="col">
+            <b-button @click="optimize">Optimize Params</b-button>
           </div>
         </div>
         <div class="my-4" style="position: relative; height:100%; width:100%">
@@ -240,6 +245,22 @@ export default class GaussianProcess extends Vue {
         break;
       }
     }
+  }
+
+  optimize() {
+    rust.then(rust => {
+      const params = rust.GaussianProcess.optimize_params(
+        Float64Array.from(this.x),
+        Float64Array.from(this.y),
+        this.amplitude,
+        this.noiseY
+      );
+      this.amplitude = params[0];
+      this.lengthScale = params[1];
+      this.lengthScalePeriodic = params[2];
+      this.period = params[3];
+      this.doGP();
+    });
   }
 
   onUserInfo() {

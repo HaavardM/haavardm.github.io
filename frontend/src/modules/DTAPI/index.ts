@@ -64,9 +64,9 @@ export function fetchEvents(
 ): Promise<Event[]> {
   if (!startTime) {
     const now = Date.now();
-    const backTwoDays = now - 2 * 24 * 60 * 60 * 1000;
+    const backOneDay = now - 1 * 24 * 60 * 60 * 1000;
 
-    startTime = new Date(backTwoDays).toISOString();
+    startTime = new Date(backOneDay).toISOString();
     console.log(startTime);
   }
   return axios
