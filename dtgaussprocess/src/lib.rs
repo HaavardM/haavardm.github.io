@@ -82,4 +82,21 @@ impl GaussianProcess {
             ci_low: ci.column(1).iter().map(|x| *x).collect(),
         });
     }
+
+    pub fn optimize_params(
+        x: Vec<f64>,
+        y: Vec<f64>,
+        amplitude: f64,
+        noise: f64,
+    ) -> Result<Vec<f64>, JsValue> {
+        let x = na::DVector::from_vec(x);
+        let y = na::DVector::from_vec(y);
+        let (params, ll) = gp::GaussianProcess::optimize_params(x, y, amplitude, noise);
+        Ok(vec![
+            params.amplitude,
+            params.length_scale_squared_exp,
+            params.length_scale_periodic_exp,
+            params.period,
+        ])
+    }
 }
