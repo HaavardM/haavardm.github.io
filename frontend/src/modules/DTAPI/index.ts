@@ -5,7 +5,7 @@ const axios = Axios.create({ baseURL });
 
 export interface Device {
   name: string;
-  labels: object;
+  labels: Record<string, string>;
   type: string;
 }
 

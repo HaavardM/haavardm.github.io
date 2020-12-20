@@ -12,45 +12,31 @@ impl Mean {
 
 struct Kernel {
     length_scale: f64,
-    length_scale_periodic: f64,
     amplitude: f64,
-    period: f64,
 }
 
 impl Kernel {
-    pub fn new(amplitude: f64, ls: f64, lsp: f64, period: f64) -> Kernel {
+    pub fn new(amplitude: f64, ls: f64) -> Kernel {
         return Kernel {
             length_scale: ls,
-            length_scale_periodic: lsp,
-            period: period,
             amplitude: amplitude,
         };
     }
 }
 
 impl Kernel {
-    fn periodic_exp_inner(&self, diff: f64) -> f64 {
-        use std::f64::consts::PI;
-        return (-2f64 / self.length_scale_periodic.powf(2.0))
-            * (PI * (diff * diff).sqrt() / self.period).sin().powf(2f64);
-    }
-
     fn squared_exp_inner(&self, diff: f64) -> f64 {
         return -diff * diff / (2.0 * self.length_scale * self.length_scale);
     }
 
     fn f(&self, x1: &f64, x2: &f64) -> f64 {
         let diff = x2 - x1;
-        return self.amplitude
-            * (self.periodic_exp_inner(diff) + self.squared_exp_inner(diff)).exp();
+        return self.amplitude * self.squared_exp_inner(diff).exp();
     }
 }
-
 pub struct HyperParameters {
     pub amplitude: f64,
     pub length_scale_squared_exp: f64,
-    pub length_scale_periodic_exp: f64,
-    pub period: f64,
 }
 
 pub struct GaussianProcess {
@@ -68,12 +54,7 @@ impl GaussianProcess {
         params: HyperParameters,
         noise: f64,
     ) -> Option<GaussianProcess> {
-        let ker = Kernel::new(
-            params.length_scale_squared_exp,
-            params.length_scale_periodic_exp,
-            params.amplitude,
-            params.period,
-        );
+        let ker = Kernel::new(params.length_scale_squared_exp, params.amplitude);
         let mean = Mean { c: inputs_y.mean() };
 
         let noise_mat = na::DMatrix::<f64>::identity(inputs_x.nrows(), inputs_x.nrows()) * noise;
@@ -151,7 +132,7 @@ mod tests {
         let y = na::DVector::from_vec(vec![1.0, 10.0, 20.0, 1.0]);
         let xs = na::DVector::from_vec(vec![1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]);
 
-        let ker = Kernel::new(1.0, 1.0, 1.0, 1.0);
+        let ker = Kernel::new(1.0, 1.0);
 
         let noise_mat = na::DMatrix::<f64>::identity(x.nrows(), x.nrows()) * 1.0;
         let kmat = ker_mat(&ker, &x, &x) + noise_mat;

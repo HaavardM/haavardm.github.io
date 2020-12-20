@@ -37,7 +37,9 @@
                   v-for="project in projects"
                   :key="project.name"
                   :value="project"
-                >{{ project.displayName }}</option>
+                >
+                  {{ project.displayName }}
+                </option>
               </select>
               <label for="deviceSelect">Device</label>
               <select
@@ -50,7 +52,9 @@
                   :key="device.name"
                   v-for="device in devices"
                   :value="device"
-                >{{ device.labels.name }}</option>
+                >
+                  {{ device.labels.name }}
+                </option>
               </select>
             </div>
           </form>
@@ -80,17 +84,7 @@
               v-model="lengthScale"
             />
           </div>
-          <div class="col">
-            <label for="lengthScalePeriodic">Length Scale Periodic</label>
-            <input
-              id="lengthScalePeriodic"
-              class="form-control"
-              @change="doGP"
-              step="0.00005"
-              type="number"
-              v-model="lengthScalePeriodic"
-            />
-          </div>
+
           <div class="col">
             <label for="amplitude">Amplitude</label>
             <input
@@ -102,19 +96,8 @@
               v-model="amplitude"
             />
           </div>
-          <div class="col">
-            <label for="period">Period</label>
-            <input
-              id="period"
-              class="form-control"
-              @change="doGP"
-              step="0.00005"
-              type="number"
-              v-model="period"
-            />
-          </div>
         </div>
-        <div class="my-4" style="position: relative; height:100%; width:100%">
+        <div class="my-4" style="position: relative; height: 100%; width: 100%">
           <canvas ref="canvas" id="cv"></canvas>
         </div>
       </div>
@@ -316,9 +299,7 @@ export default class GaussianProcess extends Vue {
         Float64Array.from(this.x),
         Float64Array.from(this.y),
         this.lengthScale,
-        this.lengthScalePeriodic,
         this.amplitude,
-        this.period,
         this.noiseY
       );
       const post = gp.posterior(Float64Array.from(this.sampleX));

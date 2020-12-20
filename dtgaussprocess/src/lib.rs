@@ -46,9 +46,7 @@ impl GaussianProcess {
         x: Vec<f64>,
         y: Vec<f64>,
         length_scale_squared_exp: f64,
-        length_scale_periodic_exp: f64,
         amplitude: f64,
-        period: f64,
         noise: f64,
     ) -> Result<GaussianProcess, JsValue> {
         console_error_panic_hook::set_once();
@@ -57,9 +55,7 @@ impl GaussianProcess {
         let inputs_y = na::DVector::<f64>::from_vec(y);
 
         let params = gp::HyperParameters {
-            length_scale_periodic_exp: length_scale_periodic_exp,
             length_scale_squared_exp: length_scale_squared_exp,
-            period: period,
             amplitude: amplitude,
         };
 
