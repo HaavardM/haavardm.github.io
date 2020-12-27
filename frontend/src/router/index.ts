@@ -7,16 +7,14 @@ const routes: Array<RouteConfig> = [
   {
     path: "/",
     name: "GP",
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
     component: () =>
-      import(/* webpackChunkName: "about" */ "../views/GaussianProcess.vue"),
+      import(/* webpackChunkName: "gp" */ "../views/GaussianProcess.vue"),
   },
   {
     path: "/graphics",
     name: "graphics",
-    component: () => import("../views/Graphics.vue"),
+    component: () =>
+      import(/*webpackChunkName: "graphics"*/ "../views/Graphics.vue"),
   },
 ];
 
