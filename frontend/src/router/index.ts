@@ -11,14 +11,19 @@ const routes: Array<RouteConfig> = [
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
     component: () =>
-      import(/* webpackChunkName: "about" */ "../views/GaussianProcess.vue")
-  }
+      import(/* webpackChunkName: "about" */ "../views/GaussianProcess.vue"),
+  },
+  {
+    path: "/graphics",
+    name: "graphics",
+    component: () => import("../views/Graphics.vue"),
+  },
 ];
 
 const router = new VueRouter({
   mode: "history",
   base: process.env.NODE_ENV === "development" ? "/" : "/playground/",
-  routes
+  routes,
 });
 
 export default router;

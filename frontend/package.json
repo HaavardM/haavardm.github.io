@@ -17,6 +17,7 @@
     "core-js": "^3.8.1",
     "env": "0.0.2",
     "oidc-client": "^1.10.1",
+    "pixi.js": "^5.3.6",
     "vue": "^2.6.12",
     "vue-class-component": "^7.2.6",
     "vue-oidc-client": "^0.4.2",

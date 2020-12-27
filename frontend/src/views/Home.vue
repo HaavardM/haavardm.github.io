@@ -8,7 +8,7 @@ import DTLogin from "@/components/DTLogin.vue";
 export default {
   name: "Main",
   components: {
-    DTLogin
-  }
+    DTLogin,
+  },
 };
 </script>
