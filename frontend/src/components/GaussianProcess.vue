@@ -384,7 +384,6 @@ export default class GaussianProcess extends Vue {
             },
           };
         }
-        console.log(this.chart.options.plugins?.zoom.zoom);
         this.chart.update();
       }
     });
