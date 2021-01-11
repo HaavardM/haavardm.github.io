@@ -51,7 +51,7 @@ impl GaussianProcess {
     ) -> Result<GaussianProcess, JsValue> {
         console_error_panic_hook::set_once();
 
-        let inputs_x = na::DVector::<f64>::from_vec(x);
+        let inputs_x = na::DMatrix::from_vec(1, x.len(), x);
         let inputs_y = na::DVector::<f64>::from_vec(y);
 
         let params = gp::HyperParameters {
@@ -66,7 +66,7 @@ impl GaussianProcess {
     }
 
     pub fn posterior(&self, x: Vec<f64>) -> Result<GPPosterior, JsValue> {
-        let x: na::DVector<f64> = na::DVector::from_vec(x);
+        let x = na::DMatrix::from_row_slice(1, x.len(), &x[..]);
         let (mean, ci) = match self.process.posterior(&x) {
             Some(x) => x,
             None => return Err(JsValue::from_str("Unable to compute posterior")),

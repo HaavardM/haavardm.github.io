@@ -1,12 +1,14 @@
 extern crate nalgebra as na;
+//use na::ClosedSub;
+use na::{storage::Storage, Matrix, Vector};
 
 struct Mean {
     c: f64,
 }
 
 impl Mean {
-    fn func(&self, x: &na::DVector<f64>) -> na::DVector<f64> {
-        return na::DVector::<f64>::from_element(x.nrows(), self.c);
+    fn func(&self, x: &na::DMatrix<f64>) -> na::DVector<f64> {
+        return na::DVector::<f64>::from_element(x.ncols(), self.c);
     }
 }
 
@@ -25,13 +27,13 @@ impl Kernel {
 }
 
 impl Kernel {
-    fn squared_exp_inner(&self, diff: f64) -> f64 {
-        return -diff * diff / (2.0 * self.length_scale * self.length_scale);
+    fn squared_exp_inner(&self, diff: &na::DVector<f64>) -> f64 {
+        return -diff.dot(diff) / (2.0 * self.length_scale * self.length_scale);
     }
 
-    fn f(&self, x1: &f64, x2: &f64) -> f64 {
+    fn f(&self, x1: &na::DVectorSlice<f64>, x2: &na::DVectorSlice<f64>) -> f64 {
         let diff = x2 - x1;
-        return self.amplitude * self.squared_exp_inner(diff).exp();
+        return self.amplitude * self.squared_exp_inner(&diff).exp();
     }
 }
 pub struct HyperParameters {
@@ -43,13 +45,13 @@ pub struct GaussianProcess {
     mean: Mean,
     kernel: Kernel,
     train_mat: na::Cholesky<f64, na::Dynamic>,
-    train_x: na::DVector<f64>,
+    train_x: na::DMatrix<f64>,
     alpha: na::DVector<f64>,
 }
 
 impl GaussianProcess {
     pub fn new(
-        inputs_x: &na::DVector<f64>,
+        inputs_x: &na::DMatrix<f64>,
         inputs_y: &na::DVector<f64>,
         params: HyperParameters,
         noise: f64,
@@ -57,7 +59,7 @@ impl GaussianProcess {
         let ker = Kernel::new(params.length_scale_squared_exp, params.amplitude);
         let mean = Mean { c: inputs_y.mean() };
 
-        let noise_mat = na::DMatrix::<f64>::identity(inputs_x.nrows(), inputs_x.nrows()) * noise;
+        let noise_mat = na::DMatrix::<f64>::identity(inputs_x.ncols(), inputs_x.ncols()) * noise;
         let ker_mat = ker_mat(&ker, &inputs_x, &inputs_x) + noise_mat;
 
         let train_mat = match na::Cholesky::new(ker_mat) {
@@ -76,17 +78,17 @@ impl GaussianProcess {
     }
     pub fn posterior(
         &self,
-        x: &na::DVector<f64>,
+        x: &na::DMatrix<f64>,
     ) -> Option<(na::DVector<f64>, na::MatrixMN<f64, na::Dynamic, na::U2>)> {
-        let prior_ker_mat = ker_mat(&self.kernel, &x, &self.train_x);
-        let post_mean = self.mean.func(&x) + &prior_ker_mat * &self.alpha;
+        let prior_ker_mat = ker_mat(&self.kernel, x, &self.train_x);
+        let post_mean = self.mean.func(x) + &prior_ker_mat * &self.alpha;
         let v_mat = self
             .train_mat
             .l_dirty()
             .solve_lower_triangular(&prior_ker_mat.transpose())
             .expect("Unable to solve")
             .transpose();
-        let cov = ker_mat(&self.kernel, &x, &x) - &v_mat * v_mat.transpose();
+        let cov = ker_mat(&self.kernel, x, x) - &v_mat * v_mat.transpose();
 
         let std: na::DVector<f64> = cov.map_diagonal(|e| e.sqrt());
         let ci_high: na::DVector<f64> = &post_mean + &std * 1.95;
@@ -99,9 +101,9 @@ impl GaussianProcess {
     }
 }
 
-fn ker_mat(ker: &Kernel, m1: &na::DVector<f64>, m2: &na::DVector<f64>) -> na::DMatrix<f64> {
-    let dim1 = m1.nrows();
-    let dim2 = m2.nrows();
+fn ker_mat(ker: &Kernel, m1: &na::DMatrix<f64>, m2: &na::DMatrix<f64>) -> na::DMatrix<f64> {
+    let dim1 = m1.ncols();
+    let dim2 = m2.ncols();
     unsafe {
         let mut m = na::DMatrix::<f64>::new_uninitialized(dim1, dim2);
         ker_mat_mut(ker, m1, m2, &mut m);
@@ -111,13 +113,13 @@ fn ker_mat(ker: &Kernel, m1: &na::DVector<f64>, m2: &na::DVector<f64>) -> na::DM
 
 fn ker_mat_mut(
     ker: &Kernel,
-    m1: &na::DVector<f64>,
-    m2: &na::DVector<f64>,
+    m1: &na::DMatrix<f64>,
+    m2: &na::DMatrix<f64>,
     out: &mut na::DMatrix<f64>,
 ) {
     let mut data = m2
-        .iter()
-        .flat_map(|row1| m1.iter().map(move |row2| ker.f(row1, row2)));
+        .column_iter()
+        .flat_map(|row1| m1.column_iter().map(move |row2| ker.f(&row1, &row2)));
     // Builds matrix COLUMN BY COLUMN
     out.iter_mut().for_each(|x| *x = data.next().unwrap());
 }
@@ -128,9 +130,9 @@ mod tests {
 
     #[test]
     fn gp() {
-        let x = na::DVector::from_vec(vec![1.0, 2.0, 3.0, 4.0]);
-        let y = na::DVector::from_vec(vec![1.0, 10.0, 20.0, 1.0]);
-        let xs = na::DVector::from_vec(vec![1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]);
+        let x = na::DMatrix::from_rows(vec![1.0, 2.0, 3.0, 4.0]);
+        let y = na::DVector::from_vec(vec![1.0, 10.0, 20.0, 1.0]).transpose();
+        let xs = na::DMatrix::from_rows(vec![1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0]);
 
         let ker = Kernel::new(1.0, 1.0);
 

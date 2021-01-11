@@ -17,8 +17,8 @@ import GaussianProcess from "@/components/GaussianProcess.vue";
 export default {
   name: "GaussianProcessView",
   components: {
-    GaussianProcess
-  }
+    GaussianProcess,
+  },
 };
 </script>
 
