@@ -79,14 +79,13 @@ impl GaussianProcess {
         x: &na::DVector<f64>,
     ) -> Option<(na::DVector<f64>, na::MatrixMN<f64, na::Dynamic, na::U2>)> {
         let prior_ker_mat = ker_mat(&self.kernel, &x, &self.train_x);
-        let post_mean = self.mean.func(&x) + &prior_ker_mat * &self.alpha;
+        let post_mean = &prior_ker_mat * &self.alpha + self.mean.func(&x);
         let v_mat = self
             .train_mat
             .l_dirty()
             .solve_lower_triangular(&prior_ker_mat.transpose())
-            .expect("Unable to solve")
-            .transpose();
-        let cov = ker_mat(&self.kernel, &x, &x) - &v_mat * v_mat.transpose();
+            .expect("Unable to solve");
+        let cov = ker_mat(&self.kernel, &x, &x) - &v_mat.transpose() * v_mat;
 
         let std: na::DVector<f64> = cov.map_diagonal(|e| e.sqrt());
         let ci_high: na::DVector<f64> = &post_mean + &std * 1.95;
