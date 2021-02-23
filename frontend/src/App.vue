@@ -1,9 +1,12 @@
 <template>
   <div class="container-fluid" id="app">
     <div class="container-fluid" id="nav">
-      <router-link to="/">Gaussian Process</router-link>
+      <router-link to="/" class="mx-2">Gaussian Process</router-link>
+      <router-link to="/anyonethere" class="mx-2">AnyoneThere</router-link>
     </div>
-    <router-view class="container-fluid" />
+    <transition name="fade" mode="out-in">
+      <router-view class="container-fluid" />
+    </transition>
   </div>
 </template>
 
@@ -24,11 +27,23 @@
 
   a {
     font-weight: bold;
-    color: #2c3e50;
+    color: #42b983;
 
     &.router-link-exact-active {
-      color: #42b983;
+      color: #2c3e50;
     }
+  }
+
+  router-link {
+    margin: 0, 2;
+  }
+
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.5s;
+  }
+  .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
+    opacity: 0;
   }
 }
 </style>
