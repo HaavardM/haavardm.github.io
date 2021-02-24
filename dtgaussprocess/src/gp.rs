@@ -28,7 +28,7 @@ impl Kernel {
     fn squared_exp_inner(&self, diff: f64) -> f64 {
         return -diff * diff / (2.0 * self.length_scale * self.length_scale);
     }
-
+    
     fn f(&self, x1: &f64, x2: &f64) -> f64 {
         let diff = x2 - x1;
         return self.amplitude * self.squared_exp_inner(diff).exp();

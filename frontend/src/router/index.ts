@@ -12,6 +12,11 @@ const routes: Array<RouteConfig> = [
     // which is lazy-loaded when the route is visited.
     component: () =>
       import(/* webpackChunkName: "about" */ "../views/GaussianProcess.vue")
+  },
+  {
+    path: "/anyonethere",
+    name: "ANYONETHERE",
+    component: () => import("../views/AnyoneThere.vue"),
   }
 ];
 
