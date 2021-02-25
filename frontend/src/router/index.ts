@@ -21,7 +21,7 @@ const routes: Array<RouteConfig> = [
 ];
 
 const router = new VueRouter({
-  mode: "history",
+  mode: "hash",
   base: process.env.NODE_ENV === "development" ? "/" : "/playground/",
   routes
 });

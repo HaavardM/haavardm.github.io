@@ -46,6 +46,7 @@ async fn main() {
     tokio::task::spawn(async move {
         let cors = warp::cors()
             .allow_origin("https://haavardm.github.io")
+            .allow_origin("http://localhost:8080")
             .allow_methods(vec!["GET"]);
         let state_handler = warp::path::end()
             .map(move || warp::reply::json(&*rx.borrow()))
@@ -74,7 +75,8 @@ async fn main() {
                 let msg = match String::from_utf8(received.data().to_owned()) {
                     Ok(s) => State {
                         value: s,
-                        timestamp: Local::now().to_rfc3339(),
+                        timestamp: Local::now()
+                            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
                     },
                     Err(e) => panic!("unable to decode message: {:?}", e),
                 };

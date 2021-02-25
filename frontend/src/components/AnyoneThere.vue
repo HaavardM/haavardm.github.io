@@ -1,24 +1,26 @@
 <template>
-  <div class="container-fluid">
+  <div class="container">
     <transition name="fade" mode="out-in">
       <div class="card m-2" :class="getStateClass(state.current.value)">
         <div class="row m-5 p-2">
-          <div class="col">
-            <h1 v-if="state">{{ state.current.value }}</h1>
+          <div class="col state-text">
+            <h1 v-if="state">{{ prettyPrintState(state.current.value) }}</h1>
           </div>
         </div>
       </div>
     </transition>
     <div class="card m-2 py-4">
-      <div class="row m-2" v-for="s in state.history" :key="s.timestamp">
-        <div class="col">
-          <p :class="'history-' + getStateClass(s.value)">
-            {{ s.value }}
+      <div class="row m-2" v-for="s in history" :key="s.timestamp">
+        <hr />
+        <div class="col state-text">
+          <p>
+            {{ prettyPrintState(s.value) }}
           </p>
         </div>
-        <div class="col">
-          <p>{{ s.timestamp }}</p>
+        <div class="col state-timestamp">
+          <p>{{ prettyPrintDate(s.timestamp) }}</p>
         </div>
+        <hr />
       </div>
     </div>
   </div>
@@ -30,7 +32,7 @@ import Axios from "axios";
 
 interface State {
   value: string;
-  timestamp: Date;
+  timestamp: string;
 }
 
 interface Response {
@@ -41,7 +43,7 @@ interface Response {
 @Component
 export default class AnyoneThere extends Vue {
   state: Response = {
-    current: { value: "UNKNOWN", timestamp: new Date() },
+    current: { value: "UNKNOWN", timestamp: "" },
     history: [],
   };
   interval: number | undefined;
@@ -51,7 +53,7 @@ export default class AnyoneThere extends Vue {
     });
   }
 
-  mounted(): void {
+  created(): void {
     this.update();
     this.interval = setInterval(this.update, 500);
   }
@@ -71,8 +73,30 @@ export default class AnyoneThere extends Vue {
     }
   }
 
+  prettyPrintState(state: string): string {
+    switch (state) {
+      case "PRESENT":
+        return "🙉";
+      case "NOT_PRESENT":
+        return "🙈";
+      default:
+        return "🤐";
+    }
+  }
+
   prettyPrintDate(d: string): string {
-    return Date.parse(d).toLocaleString();
+    return new Intl.DateTimeFormat("no", {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+    }).format(Date.parse(d));
+  }
+
+  get history(): State[] {
+    return this.state.history.reverse();
   }
 }
 </script>
@@ -123,5 +147,19 @@ a {
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
+}
+
+.state-text {
+  p {
+    font-size: 3rem;
+  }
+
+  h1 {
+    font-size: 8rem;
+  }
+}
+
+.state-timestamp {
+  font-size: 2rem;
 }
 </style>
