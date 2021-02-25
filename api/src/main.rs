@@ -65,6 +65,7 @@ async fn main() {
         };
         resp.history.reserve(20);
         loop {
+            std::thread::sleep(std::time::Duration::from_millis(1000));
             let mut received = match sub.receive().await {
                 Some(m) => m,
                 None => panic!("Unable to receive message"),
