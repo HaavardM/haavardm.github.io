@@ -1,23 +1,23 @@
 <template>
-  <div class="container">
+  <div>
     <transition name="fade" mode="out-in">
-      <div class="card m-2" :class="getStateClass(state.current.value)">
-        <div class="row m-5 p-2">
+      <div class="card shadow" :class="getStateClass(state.current.value)">
+        <div class="row my-5 py-2">
           <div class="col state-text">
             <h1 v-if="state">{{ prettyPrintState(state.current.value) }}</h1>
           </div>
         </div>
       </div>
     </transition>
-    <div class="card m-2 py-4">
-      <div class="row m-2" v-for="s in history" :key="s.timestamp">
+    <div class="card shadow my-4 py-4">
+      <div class="row" v-for="s in history" :key="s.timestamp">
         <hr />
         <div class="col state-text">
           <p>
             {{ prettyPrintState(s.value) }}
           </p>
         </div>
-        <div class="col state-timestamp">
+        <div class="col state-timestamp px-4">
           <p>{{ prettyPrintDate(s.timestamp) }}</p>
         </div>
         <hr />
@@ -160,6 +160,6 @@ a {
 }
 
 .state-timestamp {
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 </style>

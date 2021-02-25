@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="container card">
+    <div class="container card shadow">
       <b-modal id="userinputform" title="Disruptive Technologies API">
         <div class="container">
           <form v-if="projects">
@@ -102,7 +102,7 @@
         </div>
       </div>
     </div>
-    <div class="my-4 container card">
+    <div class="my-4 container card shadow">
       <b-button class="m-2" v-b-modal.userinputform>DT</b-button>
     </div>
   </div>
@@ -118,7 +118,7 @@ import {
   Project,
   Device,
   listDevices,
-  fetchEvents
+  fetchEvents,
 } from "@/modules/DTAPI";
 const rust = import("../../../dtgaussprocess/pkg/dtgaussprocess");
 
@@ -161,12 +161,12 @@ export default class GaussianProcess extends Vue {
     const diff = this.x[this.x.length - 1] - this.x[0];
     return [
       ...[...Array(Math.ceil(N * 1.1)).keys()].map(
-        i => this.x[0] + (diff * i) / N
-      )
+        (i) => this.x[0] + (diff * i) / N
+      ),
     ];
   }
 
-  mounted() {
+  mounted(): void {
     this.username = sessionStorage.getItem("username") || "";
     this.password = sessionStorage.getItem("password") || "";
     this.onUserInfo();
@@ -184,29 +184,29 @@ export default class GaussianProcess extends Vue {
                 ticks: {
                   suggestedMax: 0,
                   suggestedMin: -20,
-                  autoSkip: false
-                }
-              }
-            ]
+                  autoSkip: false,
+                },
+              },
+            ],
           },
           legend: {
-            display: false
+            display: false,
           },
           maintainAspectRatio: false,
           plugins: {
             zoom: {
               pan: {
                 enabled: true,
-                mode: "xy"
+                mode: "xy",
               },
               zoom: {
                 enabled: true,
-                mode: "xy"
-              }
-            }
+                mode: "xy",
+              },
+            },
           },
-          onClick: this.onClick
-        }
+          onClick: this.onClick,
+        },
       });
     }
   }
@@ -214,7 +214,7 @@ export default class GaussianProcess extends Vue {
   onClick(
     event: MouseEvent,
     activeElements: { _datasetIndex: number; _index: number }[]
-  ) {
+  ): void {
     for (const element of activeElements) {
       if (element._datasetIndex === 0) {
         this.x = this.x.filter((_, i) => i !== element._index);
@@ -225,10 +225,10 @@ export default class GaussianProcess extends Vue {
     }
   }
 
-  onUserInfo() {
+  onUserInfo(): void {
     if (this.username && this.password) {
       listProjects(this.username, this.password)
-        .then(p => {
+        .then((p) => {
           this.projects = p;
           if (this.projects.length > 0) {
             this.selectedProject = this.projects[0];
@@ -242,11 +242,11 @@ export default class GaussianProcess extends Vue {
     }
   }
 
-  onProjectSelection() {
+  onProjectSelection(): void {
     if (this.selectedProject) {
       listDevices(this.username, this.password, this.selectedProject.name, [
-        "temperature"
-      ]).then(d => {
+        "temperature",
+      ]).then((d) => {
         this.devices = d;
         if (this.devices.length > 0) {
           this.selectedDevice = this.devices[0];
@@ -256,36 +256,35 @@ export default class GaussianProcess extends Vue {
     }
   }
 
-  onDeviceSelection() {
+  onDeviceSelection(): void {
     if (this.selectedDevice) {
       fetchEvents(this.username, this.password, this.selectedDevice.name, [
-        "temperature"
+        "temperature",
       ])
-        .then(events =>
+        .then((events) =>
           events.length
             ? events
             : Promise.reject(
                 `No events found for ${this.selectedDevice?.name} `
               )
         )
-        .then(events =>
-          events.map(e => {
+        .then((events) =>
+          events.map((e) => {
             if (!e.data.temperature) {
               return null;
             }
             return {
               timestamp:
                 new Date(e.data.temperature.updateTime).getTime() / 1000,
-              value: e.data.temperature.value
+              value: e.data.temperature.value,
             };
           })
         )
-        .then(events => {
-          const filtered = events.filter(e => e) as DataPoint[];
-          this.y = filtered.map(e => e.value);
-          const N = this.y.length;
+        .then((events) => {
+          const filtered = events.filter((e) => e) as DataPoint[];
+          this.y = filtered.map((e) => e.value);
           this.x = filtered
-            .map(e => (e.timestamp - Date.now() / 1000) / 3600)
+            .map((e) => (e.timestamp - Date.now() / 1000) / 3600)
             .reverse();
           this.doGP();
         })
@@ -293,8 +292,8 @@ export default class GaussianProcess extends Vue {
     }
   }
 
-  doGP() {
-    rust.then(rust => {
+  doGP(): void {
+    rust.then((rust) => {
       const gp = rust.GaussianProcess.new(
         Float64Array.from(this.x),
         Float64Array.from(this.y),
@@ -329,32 +328,32 @@ export default class GaussianProcess extends Vue {
               pointBorderWidth: 2,
               showLine: false,
               pointRadius: 5,
-              fill: false
+              fill: false,
             },
             {
               data: mean,
               label: "Posterior Mean",
               fill: false,
               borderColor: "#F0522C",
-              pointRadius: 0
+              pointRadius: 0,
             },
             {
               data: ciLow,
               fill: false,
               borderColor: "rgba(0, 0, 255, 0.5)",
-              pointRadius: 0
+              pointRadius: 0,
             },
             {
               data: ciHigh,
               fill: "-1",
               borderColor: "rgba(0, 0, 255, 0.5)",
               backgroundColor: "rgba(0, 0, 255, 0.1)",
-              pointRadius: 0
-            }
+              pointRadius: 0,
+            },
           ];
         }
-        let max = ciHigh.map(l => l.y).reduce((f, s) => Math.max(f, s));
-        let min = ciLow.map(l => l.y).reduce((f, s) => Math.min(f, s));
+        let max = ciHigh.map((l) => l.y).reduce((f, s) => Math.max(f, s));
+        let min = ciLow.map((l) => l.y).reduce((f, s) => Math.min(f, s));
         const diff = max - min;
         max = max + 0.1 * diff;
         min = min - 0.1 * diff;
@@ -363,12 +362,12 @@ export default class GaussianProcess extends Vue {
             ...this.chart.options.plugins.zoom.pan,
             rangeMin: {
               x: time[0],
-              y: min
+              y: min,
             },
             rangeMax: {
               x: time[time.length - 1],
-              y: max
-            }
+              y: max,
+            },
           };
         }
         if (this.chart.options.plugins?.zoom?.zoom) {
@@ -376,12 +375,12 @@ export default class GaussianProcess extends Vue {
             ...this.chart.options.plugins.zoom.zoom,
             rangeMin: {
               x: time[0],
-              y: min
+              y: min,
             },
             rangeMax: {
               x: time[time.length - 1],
-              y: max
-            }
+              y: max,
+            },
           };
         }
         console.log(this.chart.options.plugins?.zoom.zoom);

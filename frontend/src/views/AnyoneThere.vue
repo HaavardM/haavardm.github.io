@@ -1,8 +1,10 @@
 <template>
   <div class="container-fluid">
-    <AnyoneThere />
-    <div class="container">
-      <div class="card m-2 p-4 text-left">
+    <div class="container p-0">
+      <AnyoneThere />
+    </div>
+    <div class="container card rounded my-4 shadow">
+      <div class="py-4 px-2 text-left">
         <h1 class="text-center">What is this?</h1>
         <p>
           What your're looking at is a small embedded / cloud project I did for
@@ -134,5 +136,9 @@ export default {
   p {
     text-align: left;
   }
+}
+
+code {
+  display: inline-block !important;
 }
 </style>

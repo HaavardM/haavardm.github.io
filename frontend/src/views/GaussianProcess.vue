@@ -2,7 +2,7 @@
   <div class="container-fluid">
     <GaussianProcess />
 
-    <div class="container card my-2 text-box">
+    <div class="container card my-2 text-box shadow">
       <h1>Bayesian Methods: The Gaussian Process</h1>
 
       <h2>Work in progress</h2>
@@ -17,8 +17,8 @@ import GaussianProcess from "@/components/GaussianProcess.vue";
 export default {
   name: "GaussianProcessView",
   components: {
-    GaussianProcess
-  }
+    GaussianProcess,
+  },
 };
 </script>
 
