@@ -45,7 +45,7 @@ async fn main() {
 
     tokio::task::spawn(async move {
         let cors = warp::cors()
-            .allow_origin("https://haavardm.github.io")
+            .allow_origin("https://mellbye.dev")
             .allow_origin("http://localhost:8080")
             .allow_methods(vec!["GET"]);
         let state_handler = warp::path::end()

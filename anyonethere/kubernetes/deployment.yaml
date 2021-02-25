@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: amiworking
+  name: anyonethere
 spec:
   selector:
     matchLabels:
-      app: amiworking
+      app: anyonethere
   template:
     metadata:
       labels:
-        app: amiworking
+        app: anyonethere
     spec:
       volumes:
         - name: key-volume
           configMap:
             name: pubsub-key
       containers:
-        - name: amiworking
-          image: haavardm/amiworking
+        - name: anyonethere
+          image: haavardm/anyonethere-api
           imagePullPolicy: Always
           resources:
             limits:
@@ -35,10 +35,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: amiworking
+  name: anyonethere
 spec:
   selector:
-    app: amiworking
+    app: anyonethere
   ports:
     - port: 80
       targetPort: 3030
@@ -46,24 +46,24 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: amiworking
+  name: anyonethere
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
   labels:
-    name: amiworking
+    name: anyonethere
 spec:
   tls:
     - hosts:
-        - amiworking.shapingideas.fyi
-      secretName: amiworking-tls
+        - anyonethere.shapingideas.fyi
+      secretName: anyonethere-tls
   rules:
-    - host: amiworking.shapingideas.fyi
+    - host: anyonethere.shapingideas.fyi
       http:
         paths:
           - pathType: Prefix
             path: "/"
             backend:
               service:
-                name: amiworking
+                name: anyonethere
                 port:
                   number: 80

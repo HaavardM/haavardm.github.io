@@ -48,7 +48,7 @@ export default class AnyoneThere extends Vue {
   };
   interval: number | undefined;
   update(): void {
-    Axios.get("https://amiworking.shapingideas.fyi").then((r) => {
+    Axios.get("https://anyonethere.shapingideas.fyi").then((r) => {
       this.state = r.data;
     });
   }
@@ -80,7 +80,7 @@ export default class AnyoneThere extends Vue {
       case "NOT_PRESENT":
         return "🙈";
       default:
-        return "🤐";
+        return "🙊";
     }
   }
 

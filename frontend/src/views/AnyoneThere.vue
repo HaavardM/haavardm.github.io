@@ -57,18 +57,19 @@
           annoying:
           <ul>
             <li>
-              Dependencies was a bit challenging. Several libraries imported
-              <code>tokio</code>, but using different version. This resulted in
+              Dependencies were a bit challenging. Several libraries imported
+              <code>tokio</code>, but using different versions. This resulted in
               tokio complaining about multiple runtimes used in the same
               application. In the end I had to downgrade one of the libraries in
-              order to avoid conflicts.
+              order to avoid conflicts, forcing me to use an older release of
+              tokio.
             </li>
             <li>
               When deploying Go applications, I usually like to use alpine
-              Docker images to reduce the image size. This seemed to work for
+              Docker images to reduce the image size. This appeared to work for
               Rust as well according to the docs, but I was unable to get it to
-              work. Rust was not able to compile the application due to some
-              missing libraries. Even after installing
+              build. Rust was not able to compile the application due to some
+              missing libraries and even after installing
               <code>libc6-compat</code> it was still not working. I had to give
               up alpine for now, and reverted back to using a debian base image.
             </li>
@@ -87,15 +88,20 @@
             </li>
           </ul>
         </span>
-        Rust looks very promising, but it still feels unfinished to me. Most
-        libraries are not yet considered stable, many libraries requires the
-        nightly compiler, and the development tools (looking at you Rust VSCode
-        plugin) still feels flaky. The generated Rust code is probably amazing,
-        but I would still feel uncomfortable trusting the language for use in
-        production systems. No persistent storage was used when implementing
-        this application and the state will be lost if the K8S pod restarts. In
-        the future I might (probably not) add Redis support or use a Google
-        Cloud service such as Datastore.
+        <span>
+          Rust looks very promising, but to me it still feels immature. Most
+          libraries are not yet considered stable, many libraries requires the
+          nightly compiler, and the development tools (looking at you Rust
+          VSCode plugin) still feels flaky. The generated Rust code is probably
+          amazing, but I would still feel uncomfortable trusting the language
+          for use in production systems.
+        </span>
+        <span>
+          No persistent storage was used when implementing this application and
+          the state will be lost if the K8S pod restarts. In the future I might
+          (probably not) add Redis support or use a Google Cloud service such as
+          Datastore.
+        </span>
         <hr />
         <h2>Part 3: The UI</h2>
         The UI is simply an extension to this website, a place where I can put
