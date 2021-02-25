@@ -10,11 +10,7 @@
       </div>
     </transition>
     <div class="card m-2 py-4">
-      <div
-        class="row m-2"
-        v-for="s in state.history.reverse()"
-        :key="s.timestamp"
-      >
+      <div class="row m-2" v-for="s in state.history" :key="s.timestamp">
         <div class="col">
           <p :class="'history-' + getStateClass(s.value)">
             {{ s.value }}
