@@ -1,27 +1,35 @@
 <template>
   <div>
     <transition name="fade" mode="out-in">
-      <div class="card shadow" :class="getStateClass(state.current.value)">
+      <div
+        :key="currentState.value"
+        class="card shadow"
+        :class="getStateClass(currentState.value)"
+      >
         <div class="row my-5 py-2">
           <div class="col state-text">
-            <h1 v-if="state">{{ prettyPrintState(state.current.value) }}</h1>
+            <h1 v-if="currentState">
+              {{ prettyPrintState(currentState.value) }}
+            </h1>
           </div>
         </div>
       </div>
     </transition>
     <div class="card shadow my-4 py-4">
-      <div class="row" v-for="s in history" :key="s.timestamp">
-        <hr />
-        <div class="col state-text">
-          <p>
-            {{ prettyPrintState(s.value) }}
-          </p>
+      <transition-group name="fade" mode="out-in">
+        <div class="row" v-for="s in history" :key="s.timestamp">
+          <hr />
+          <div class="col state-text">
+            <p>
+              {{ prettyPrintState(s.value) }}
+            </p>
+          </div>
+          <div class="col state-timestamp px-4">
+            <p>{{ prettyPrintDate(s.timestamp) }}</p>
+          </div>
+          <hr />
         </div>
-        <div class="col state-timestamp px-4">
-          <p>{{ prettyPrintDate(s.timestamp) }}</p>
-        </div>
-        <hr />
-      </div>
+      </transition-group>
     </div>
   </div>
 </template>
@@ -93,6 +101,10 @@ export default class AnyoneThere extends Vue {
       minute: "numeric",
       second: "numeric",
     }).format(Date.parse(d));
+  }
+
+  get currentState(): State {
+    return this.state.current;
   }
 
   get history(): State[] {

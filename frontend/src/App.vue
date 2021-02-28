@@ -1,8 +1,8 @@
 <template>
   <div class="bg-light" id="app">
     <div class="border-bottom shadow-sm bg-white" id="nav">
-      <router-link to="/" class="mx-3">GaussianProcess</router-link>
-      <router-link to="/anyonethere" class="mx-3">AnyoneThere</router-link>
+      <router-link to="/" class="mx-2">GaussianProcess</router-link>
+      <router-link to="/anyonethere" class="mx-2">AnyoneThere</router-link>
     </div>
     <transition name="fade" mode="out-in">
       <router-view class="container-fluid my-4" />
