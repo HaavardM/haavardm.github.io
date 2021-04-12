@@ -59,21 +59,29 @@
           annoying:
           <ul>
             <li>
-              Dependencies were a bit challenging. Several libraries imported
-              <code>tokio</code>, but using different versions. This resulted in
-              tokio complaining about multiple runtimes used in the same
-              application. In the end I had to downgrade one of the libraries in
-              order to avoid conflicts, forcing me to use an older release of
-              tokio.
+              <strike
+                >Dependencies were a bit challenging. Several libraries imported
+                <code>tokio</code>, but using different versions. This resulted
+                in tokio complaining about multiple runtimes used in the same
+                application. In the end I had to downgrade one of the libraries
+                in order to avoid conflicts, forcing me to use an older release
+                of tokio.</strike
+              >
+              No longer an issue as all libraries now use tokio 1.x.x.
             </li>
             <li>
-              When deploying Go applications, I usually like to use alpine
-              Docker images to reduce the image size. This appeared to work for
-              Rust as well according to the docs, but I was unable to get it to
-              build. Rust was not able to compile the application due to some
-              missing libraries and even after installing
-              <code>libc6-compat</code> it was still not working. I had to give
-              up alpine for now, and reverted back to using a debian base image.
+              <strike
+                >When deploying Go applications, I usually like to use alpine
+                Docker images to reduce the image size. This appeared to work
+                for Rust as well according to the docs, but I was unable to get
+                it to build. Rust was not able to compile the application due to
+                some missing libraries and even after installing
+                <code>libc6-compat</code> it was still not working. I had to
+                give up alpine for now, and reverted back to using a debian base
+                image.</strike
+              >
+              Alpine Docker images is now working as expected! No clue whether
+              it was the libraries or Rust itself, but I am happy!
             </li>
             <li>
               The Rust development experience is still not as good as I would've

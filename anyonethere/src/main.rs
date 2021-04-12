@@ -18,6 +18,7 @@ struct Response {
 
 #[tokio::main]
 async fn main() {
+    println!("Welcome!");
     // GET /hello/warp => 200 OK with body "Hello, warp!"
     let mut client = match pubsub::Client::new("wearebrews").await {
         Ok(c) => c,
@@ -86,7 +87,7 @@ async fn main() {
                 }
                 resp.history.push(msg.clone());
                 resp.current = msg;
-                tx.broadcast(resp.clone()).expect("Unable to send message");
+                tx.send(resp.clone()).expect("Unable to send message");
                 println!(
                     "Accepting message {} at {}",
                     std::str::from_utf8(received.data()).expect("unable to decode utf8 string"),
