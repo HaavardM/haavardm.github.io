@@ -28,7 +28,6 @@ impl Kernel {
     fn squared_exp_inner(&self, diff: f64) -> f64 {
         return -diff * diff / (2.0 * self.length_scale * self.length_scale);
     }
-    
     fn f(&self, x1: &f64, x2: &f64) -> f64 {
         let diff = x2 - x1;
         return self.amplitude * self.squared_exp_inner(diff).exp();
@@ -60,12 +59,14 @@ impl GaussianProcess {
         let noise_mat = na::DMatrix::<f64>::identity(inputs_x.nrows(), inputs_x.nrows()) * noise;
         let ker_mat = ker_mat(&ker, &inputs_x, &inputs_x) + noise_mat;
 
-        let train_mat = match na::Cholesky::new(ker_mat) {
+        let train_mat = match ker_mat.cholesky() {
             Some(c) => c,
             None => return None,
         };
-        let mut b = inputs_y - mean.func(&inputs_x);
+
+        let mut b = inputs_y - mean.func(inputs_x);
         train_mat.solve_mut(&mut b);
+
         return Some(GaussianProcess {
             kernel: ker,
             mean: mean,
@@ -102,7 +103,7 @@ fn ker_mat(ker: &Kernel, m1: &na::DVector<f64>, m2: &na::DVector<f64>) -> na::DM
     let dim1 = m1.nrows();
     let dim2 = m2.nrows();
     unsafe {
-        let mut m = na::DMatrix::<f64>::new_uninitialized(dim1, dim2);
+        let mut m = na::DMatrix::<f64>::new_uninitialized(dim1, dim2).assume_init();
         ker_mat_mut(ker, m1, m2, &mut m);
         return m;
     }
