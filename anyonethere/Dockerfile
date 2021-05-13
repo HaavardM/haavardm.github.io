@@ -1,15 +1,17 @@
 FROM rust:1.51-alpine AS build
 
+ARG JOBS=1 
+
 WORKDIR /usr/src/api
 RUN apk add --no-cache musl-dev protoc
 COPY Cargo.* .
 RUN rustup component add rustfmt
 RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release -j 4
+RUN cargo build --release -j ${JOBS}
 
 
 COPY src src
-RUN cargo build --release -j 4
+RUN cargo build --release -j ${JOBS}
 
 FROM alpine
 RUN apk add --update --no-cache ca-certificates
