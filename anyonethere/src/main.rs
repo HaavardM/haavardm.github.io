@@ -94,7 +94,7 @@ async fn run_http(response: Arc<Mutex<Response>>) {
 }
 
 #[tokio::main]
-async fn main(){
+async fn main() {
     let state_http = Arc::new(Mutex::new(Response::default()));
     let state_pubsub = state_http.clone();
     let t1 = run_pubsub(state_pubsub);
